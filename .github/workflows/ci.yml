@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  application-and-terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: app/pom.xml
+
+      - name: Test Spring Boot application
+        working-directory: app
+        run: mvn -B clean test
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.2
+
+      - name: Terraform format check
+        run: terraform fmt -check -recursive terraform
+
+      - name: Validate Azure bootstrap Terraform
+        working-directory: terraform/bootstrap-state
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+      - name: Validate Azure dev Terraform
+        working-directory: terraform/environments/dev
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+      - name: Validate Datadog Terraform
+        working-directory: terraform/datadog/dev
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+      - name: Guard against committing local state or secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '(^|/)(terraform\.tfstate(\..*)?|\.terraform/|\.DS_Store$|\.env$)' ; then
+            echo 'Forbidden local/runtime files are tracked.' >&2
+            exit 1
+          fi
+          if git ls-files | grep -E '\.tfvars$' | grep -v '\.tfvars\.example$' ; then
+            echo 'A non-example .tfvars file is tracked.' >&2
+            exit 1
+          fi

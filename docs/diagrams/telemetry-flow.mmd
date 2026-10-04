@@ -1,0 +1,16 @@
+flowchart LR
+  R[HTTP Request] --> A[Spring Boot API]
+  A --> L[Structured JSON Log]
+  A --> T[APM Trace]
+  A --> B[Business Event]
+  C[Azure Container Apps] --> M[Azure Metrics]
+  L --> D[Datadog]
+  T --> D
+  B --> D
+  M --> D
+  D --> Q[Search and Analytics]
+  Q --> LM[Log-based Metrics]
+  LM --> DB[Dashboard]
+  DB --> MON[Monitor / Alert]
+  T --> X[Trace-Log Correlation]
+  L --> X

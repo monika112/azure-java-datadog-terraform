@@ -1,0 +1,123 @@
+name: Deploy to ACA
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Optional image tag. Defaults to the commit SHA.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  CONTAINER_APP_NAME: ${{ vars.AZURE_CONTAINER_APP_NAME }}
+  ACR_NAME: ${{ vars.AZURE_ACR_NAME }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Azure login with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve deployment values
+        id: values
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          : "${RESOURCE_GROUP:?Set repository/environment variable AZURE_RESOURCE_GROUP}"
+          : "${CONTAINER_APP_NAME:?Set repository/environment variable AZURE_CONTAINER_APP_NAME}"
+          : "${ACR_NAME:?Set repository/environment variable AZURE_ACR_NAME}"
+          ACR_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
+          IMAGE_TAG="${REQUESTED_TAG:-${GITHUB_SHA}}"
+          IMAGE="$ACR_SERVER/eligibility-api:$IMAGE_TAG"
+          echo "acr_server=$ACR_SERVER" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Login to ACR
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push linux/amd64 image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.values.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy image to Azure Container Apps
+        run: |
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "${{ steps.values.outputs.image }}"
+
+      - name: Wait for latest revision to become healthy
+        id: revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVISION=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query properties.latestRevisionName -o tsv)
+          echo "revision=$REVISION" >> "$GITHUB_OUTPUT"
+
+          for attempt in $(seq 1 30); do
+            HEALTH=$(az containerapp revision show \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --revision "$REVISION" \
+              --query properties.healthState -o tsv 2>/dev/null || true)
+            echo "Attempt $attempt: revision=$REVISION health=$HEALTH"
+            if [ "$HEALTH" = "Healthy" ]; then
+              exit 0
+            fi
+            if [ "$HEALTH" = "Unhealthy" ]; then
+              az containerapp logs show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" --type system --tail 50 || true
+            fi
+            sleep 10
+          done
+
+          echo "Revision $REVISION did not become Healthy." >&2
+          az containerapp revision list --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" -o table || true
+          exit 1
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          FQDN=$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          curl --fail --show-error --retry 5 --retry-delay 5 "https://$FQDN/api/health/live"
+          curl --fail --show-error --retry 3 --retry-delay 3 "https://$FQDN/api/demo/success"
+
+      - name: Deployment summary
+        run: |
+          echo "### ACA deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${{ steps.values.outputs.image }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Revision: \`${{ steps.revision.outputs.revision }}\`" >> "$GITHUB_STEP_SUMMARY"

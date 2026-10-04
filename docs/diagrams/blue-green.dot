@@ -1,0 +1,11 @@
+digraph deployment {
+  rankdir=TB;
+  node [shape=box];
+  commit [label="Git Commit"]; ci [label="CI Tests and Scans"]; acr [label="Push Immutable Image to ACR"];
+  green [label="Create Green Revision"]; label [label="Assign Green Label"]; ready [label="Wait for Readiness"];
+  smoke [label="Smoke Test Green URL"]; gate [label="Check Datadog Signals"]; promote [label="Promote"];
+  shift [label="Shift Traffic"]; event [label="Deployment Event"]; keep [label="Keep Blue at 100%"]; rollback [label="Rollback to Blue"];
+  commit -> ci -> acr -> green -> label -> ready -> smoke -> gate;
+  gate -> promote [label="healthy"]; promote -> shift -> event;
+  gate -> keep [label="unhealthy"]; shift -> rollback [label="regression"];
+}

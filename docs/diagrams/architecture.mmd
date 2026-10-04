@@ -1,0 +1,28 @@
+flowchart LR
+  U[Users] --> E[Azure Front Door / Secure Ingress]
+  E --> ACA[Azure Container Apps]
+  ACA --> B[Blue Revision - Stable]
+  ACA --> G[Green Revision - Candidate]
+  ACR[Azure Container Registry] --> ACA
+  KV[Azure Key Vault] --> ACA
+  MI[Managed Identity] --> ACR
+  MI --> KV
+  B --> APP[Spring Boot API]
+  G --> APP2[Spring Boot API]
+  APP --> L[Structured JSON Logs]
+  APP --> A[APM / Traces]
+  APP --> BE[Business Events]
+  ACA --> M[Azure Platform Metrics]
+  L --> DD[Datadog]
+  A --> DD
+  BE --> DD
+  M --> DD
+  DD --> D1[Log Explorer]
+  DD --> D2[APM]
+  DD --> D3[Metrics]
+  DD --> D4[Dashboards]
+  DD --> D5[Monitors]
+  DD --> D6[Deployment Events]
+  GH[GitHub Actions] -->|OIDC| AZ[Azure]
+  GH --> ACR
+  GH --> ACA

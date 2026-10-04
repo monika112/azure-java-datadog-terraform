@@ -1,0 +1,30 @@
+digraph G {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+
+  U [label="Client Request"];
+  ACA [label="Azure Container Apps"];
+  APP [label="Spring Boot API"];
+  TRACE [label="Datadog Java Tracer"];
+  LOG [label="Structured Application Log"];
+  INIT [label="Datadog serverless-init"];
+  DD [label="Datadog"];
+  LOGS [label="Log Explorer"];
+  APM [label="APM Service / Trace"];
+  LBM [label="Log-based Metric"];
+  DASH [label="Dashboard"];
+  MON [label="Monitor / Alert"];
+
+  U -> ACA;
+  ACA -> APP;
+  APP -> TRACE;
+  APP -> LOG;
+  TRACE -> INIT;
+  LOG -> INIT;
+  INIT -> DD;
+  DD -> LOGS;
+  DD -> APM;
+  DD -> LBM;
+  LBM -> DASH;
+  LBM -> MON;
+}

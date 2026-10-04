@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <includeMdc>true</includeMdc><includeContext>false</includeContext>
+      <fieldNames><timestamp>timestamp</timestamp><version>[ignore]</version><logger>logger_name</logger><thread>thread_name</thread><level>level</level><levelValue>[ignore]</levelValue></fieldNames>
+      <customFields>{"application":"eligibility-api"}</customFields>
+    </encoder>
+  </appender>
+  <root level="INFO"><appender-ref ref="JSON_STDOUT"/></root>
+</configuration>

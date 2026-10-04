@@ -1,0 +1,10 @@
+service_name = "eligibility-api"
+environment  = "dev"
+team         = "platform"
+
+endpoint_failure_threshold_5m = 5
+server_error_threshold_5m     = 3
+login_failure_threshold_5m    = 5
+latency_p95_ms_threshold      = 1000
+
+availability_slo_target = 99.9

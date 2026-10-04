@@ -1,0 +1,5 @@
+package com.example.observability.api;
+import com.example.observability.logging.BusinessEventLogger; import com.example.observability.model.*; import com.example.observability.service.DemoBusinessService; import jakarta.validation.Valid; import org.springframework.http.ResponseEntity; import org.springframework.web.bind.annotation.*; import java.util.Map;
+@RestController @RequestMapping("/api/login") public class LoginController { private final DemoBusinessService s; private final BusinessEventLogger e; public LoginController(DemoBusinessService s,BusinessEventLogger e){this.s=s;this.e=e;}
+ @PostMapping public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest r){e.requested("login.requested",Map.of()); if(s.authenticate(r.username(),r.password())){e.success("login.success",Map.of());return ResponseEntity.ok(ApiResponse.success("Login succeeded"));} e.failure("login.failed",Map.of("failure_reason","invalid_credentials"));return ResponseEntity.status(401).body(ApiResponse.failure("Invalid credentials"));}
+}

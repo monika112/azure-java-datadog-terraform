@@ -1,0 +1,53 @@
+name: Roll back ACA traffic
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision_name:
+        description: Existing healthy ACA revision to receive 100% traffic
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  CONTAINER_APP_NAME: ${{ vars.AZURE_CONTAINER_APP_NAME }}
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Azure login with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate requested revision
+        shell: bash
+        env:
+          REVISION: ${{ inputs.revision_name }}
+        run: |
+          set -euo pipefail
+          HEALTH=$(az containerapp revision show             --name "$CONTAINER_APP_NAME"             --resource-group "$RESOURCE_GROUP"             --revision "$REVISION"             --query properties.healthState -o tsv)
+          echo "Revision $REVISION health: $HEALTH"
+          if [ "$HEALTH" != "Healthy" ]; then
+            echo "Refusing rollback: target revision is not Healthy." >&2
+            exit 1
+          fi
+
+      - name: Route 100 percent traffic to target revision
+        env:
+          REVISION: ${{ inputs.revision_name }}
+        run: |
+          az containerapp ingress traffic set             --name "$CONTAINER_APP_NAME"             --resource-group "$RESOURCE_GROUP"             --revision-weight "$REVISION=100"
+
+      - name: Verify traffic
+        run: |
+          az containerapp ingress traffic show             --name "$CONTAINER_APP_NAME"             --resource-group "$RESOURCE_GROUP"             --output table

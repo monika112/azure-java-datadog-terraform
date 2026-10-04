@@ -1,0 +1,9 @@
+flowchart LR
+  GH[GitHub Actions] -->|OIDC| ID[Microsoft Entra ID]
+  ID -->|Short-lived token| AZ[Azure]
+  AZ --> ACA[Azure Container Apps]
+  ACA -->|Managed Identity| ACR[Azure Container Registry]
+  ACA -->|Managed Identity| KV[Azure Key Vault]
+  ACA -->|Telemetry| DD[Datadog]
+  U[Users] -->|HTTPS| E[Front Door / ACA Ingress]
+  E --> ACA

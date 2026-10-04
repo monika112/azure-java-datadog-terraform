@@ -1,0 +1,10 @@
+digraph security {
+  rankdir=LR;
+  node [shape=box];
+  gha [label="GitHub Actions"]; entra [label="Microsoft Entra ID"]; azure [label="Azure"];
+  aca [label="Azure Container Apps"]; acr [label="Azure Container Registry"]; kv [label="Azure Key Vault"];
+  dd [label="Datadog"]; users [label="Users"]; edgegw [label="Front Door / ACA Ingress"];
+  gha -> entra [label="OIDC"]; entra -> azure [label="short-lived token"]; azure -> aca;
+  aca -> acr [label="managed identity"]; aca -> kv [label="managed identity"]; aca -> dd [label="telemetry"];
+  users -> edgegw [label="HTTPS"]; edgegw -> aca;
+}

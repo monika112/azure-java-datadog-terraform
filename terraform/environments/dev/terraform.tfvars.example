@@ -1,0 +1,22 @@
+location     = "eastus"
+app_name     = "observe"
+environment  = "dev"
+service_name = "eligibility-api"
+
+min_replicas = 1
+max_replicas = 3
+
+vnet_address_space = [
+  "10.40.0.0/16"
+]
+
+aca_subnet_address_prefixes = [
+  "10.40.0.0/23"
+]
+
+tags = {
+  owner       = "monika"
+  application = "eligibility-api"
+  managed_by  = "terraform"
+  cost_center = "learning"
+}

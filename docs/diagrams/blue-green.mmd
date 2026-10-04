@@ -1,0 +1,13 @@
+flowchart TD
+  C[Git Commit] --> CI[CI tests and scans]
+  CI --> I[Push immutable image to ACR]
+  I --> R[Create Green Revision]
+  R --> L[Assign Green Label]
+  L --> H[Wait for Readiness]
+  H --> S[Smoke Test Green URL]
+  S --> D[Check Datadog Signals]
+  D -->|Healthy| P[Promote]
+  P --> T[Shift Traffic to Green]
+  T --> E[Deployment Event]
+  D -->|Unhealthy| K[Keep Blue at 100 percent]
+  T -->|Regression| RB[Rollback to Blue]

@@ -1,0 +1,29 @@
+# Terraform runtime/state
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+
+# Terraform variable files can contain secrets
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Local environment / credentials
+.env
+.env.*
+!.env.example
+
+# Java / Maven build output
+app/target/
+*.class
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Local logs
+*.log

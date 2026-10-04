@@ -1,0 +1,13 @@
+digraph telemetry {
+  rankdir=LR;
+  node [shape=box];
+  request [label="HTTP Request"]; api [label="Spring Boot API"]; logs [label="Structured Logs"];
+  trace [label="APM Trace"]; biz [label="Business Event"]; aca [label="Azure Container Apps"];
+  azm [label="Azure Metrics"]; dd [label="Datadog"]; search [label="Search / Analytics"];
+  metrics [label="Log-based Metrics"]; dashboard [label="Dashboard"]; monitor [label="Monitor / Alert"];
+  corr [label="Trace-Log Correlation"];
+  request -> api; api -> logs; api -> trace; api -> biz; aca -> azm;
+  logs -> dd; trace -> dd; biz -> dd; azm -> dd;
+  dd -> search -> metrics -> dashboard -> monitor;
+  logs -> corr; trace -> corr;
+}

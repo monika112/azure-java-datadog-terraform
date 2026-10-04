@@ -1,0 +1,13 @@
+flowchart LR
+    U[Client Request] --> ACA[Azure Container Apps]
+    ACA --> APP[Spring Boot API]
+    APP --> TRACE[Datadog Java Tracer]
+    APP --> LOG[Structured Application Log]
+    TRACE --> INIT[Datadog serverless-init]
+    LOG --> INIT
+    INIT --> DD[Datadog]
+    DD --> LOGS[Log Explorer]
+    DD --> APM[APM Service / Trace]
+    DD --> LBM[Log-based Metric]
+    LBM --> DASH[Dashboard]
+    LBM --> MON[Monitor / Alert]

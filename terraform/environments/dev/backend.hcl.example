@@ -1,0 +1,5 @@
+# Fill these values after running terraform/bootstrap-state.
+resource_group_name  = "rg-observe-tfstate"
+storage_account_name = "<output from bootstrap>"
+container_name       = "tfstate"
+key                  = "datadog-java-azure/dev.tfstate"

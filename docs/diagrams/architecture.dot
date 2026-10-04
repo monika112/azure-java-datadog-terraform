@@ -1,0 +1,18 @@
+digraph architecture {
+  rankdir=LR;
+  node [shape=box];
+  users [label="Users"]; edgegw [label="Front Door / Secure Ingress"]; aca [label="Azure Container Apps"];
+  blue [label="Blue Revision - Stable"]; green [label="Green Revision - Candidate"];
+  acr [label="Azure Container Registry"]; kv [label="Azure Key Vault"]; mi [label="Managed Identity"];
+  app [label="Spring Boot API"]; app2 [label="Spring Boot API"];
+  logs [label="Structured JSON Logs"]; apm [label="Datadog APM / Traces"]; biz [label="Business Events"];
+  azm [label="Azure Platform Metrics"]; dd [label="Datadog"]; dashboards [label="Dashboards"];
+  monitors [label="Monitors"]; events [label="Deployment Events"]; gha [label="GitHub Actions"]; azure [label="Azure"];
+  users -> edgegw -> aca;
+  aca -> blue; aca -> green; acr -> aca; mi -> acr; mi -> kv; kv -> aca;
+  blue -> app; green -> app2;
+  app -> logs; app -> apm; app -> biz; aca -> azm;
+  logs -> dd; apm -> dd; biz -> dd; azm -> dd;
+  dd -> dashboards; dd -> monitors; dd -> events;
+  gha -> azure [label="OIDC"]; gha -> acr; gha -> aca;
+}
