@@ -4,7 +4,7 @@ resource "datadog_service_level_objective" "api_availability" {
   description = "Availability based on successful endpoint requests divided by total successful + failed endpoint requests."
 
   query {
-    numerator = "sum:app.user.endpoint.success{*}.as_count()"
+    numerator   = "sum:app.user.endpoint.success{*}.as_count()"
     denominator = "sum:app.user.endpoint.success{*}.as_count() + sum:app.user.endpoint.failure{*}.as_count()"
   }
 
